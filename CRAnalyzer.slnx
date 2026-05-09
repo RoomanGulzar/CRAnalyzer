@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CRAnalyzer.Core/CRAnalyzer.Core.csproj" />
+  <Project Path="CRAnalyzer.Infrastructure/CRAnalyzer.Infrastructure.csproj" />
+  <Project Path="CRAnalyzer.Tests/CRAnalyzer.Tests.csproj" />
+  <Project Path="CRAnalyzer.Web/CRAnalyzer.Web.csproj" />
+</Solution>

@@ -1,0 +1,27 @@
+@model CRAnalyzer.Web.Models.ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-7">
+        <div class="card-glass text-center" style="padding:3rem 2rem;">
+            <div style="font-size:4rem;color:var(--color-danger);margin-bottom:1rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <h1 style="font-size:1.8rem;font-weight:800;margin-bottom:0.5rem;">Something went wrong</h1>
+            <p style="color:var(--color-text-muted);margin-bottom:1.5rem;">An unexpected error occurred while processing your request.</p>
+
+            @if (Model?.ShowRequestId == true)
+            {
+                <div style="background:var(--color-bg-2);border-radius:var(--radius-md);padding:0.75rem 1rem;font-size:0.82rem;color:var(--color-text-subtle);margin-bottom:1.5rem;">
+                    <strong>Request ID:</strong> <code>@Model.RequestId</code>
+                </div>
+            }
+
+            <a asp-controller="Home" asp-action="Index" class="btn-primary-custom">
+                <i class="bi bi-house-fill"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>

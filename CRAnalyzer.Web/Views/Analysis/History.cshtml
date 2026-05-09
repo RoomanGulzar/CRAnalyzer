@@ -1,0 +1,114 @@
+@using CRAnalyzer.Core.Domain.Enums
+@using CRAnalyzer.Core.Domain.Models
+@model IEnumerable<Analysis>
+@{
+    ViewData["Title"] = "Analysis History";
+}
+
+<!-- Page Header -->
+<div class="d-flex align-items-center justify-content-between mb-4 mt-2 flex-wrap gap-2">
+    <div>
+        <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin:0;">
+            <i class="bi bi-clock-history me-2" style="color:var(--color-primary);"></i>Analysis History
+        </h1>
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin:0;">All previous change request analyses</p>
+    </div>
+    <a asp-controller="Analysis" asp-action="New" class="btn-primary-custom">
+        <i class="bi bi-plus-circle-fill"></i> New Analysis
+    </a>
+</div>
+
+<div class="card-glass" style="padding:0;overflow:hidden;">
+    @if (!Model.Any())
+    {
+        <div class="empty-state" style="padding:4rem 2rem;">
+            <i class="bi bi-inbox"></i>
+            <h5>No analyses found</h5>
+            <p>Start by creating your first analysis.</p>
+            <a asp-controller="Analysis" asp-action="New" class="btn-primary-custom mt-2">
+                <i class="bi bi-plus-circle-fill"></i> Get Started
+            </a>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Title</th>
+                        <th>CR Document</th>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Files</th>
+                        <th>Created</th>
+                        <th>Duration</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model)
+                    {
+                        var duration = a.CompletedAt.HasValue
+                            ? (a.CompletedAt.Value - a.CreatedAt).TotalSeconds.ToString("F0") + "s"
+                            : "—";
+                        <tr>
+                            <td style="color:var(--color-text-subtle);font-size:0.82rem;">@a.Id</td>
+                            <td>
+                                <strong>@a.Title</strong>
+                            </td>
+                            <td>
+                                <div style="font-size:0.82rem;color:var(--color-text-muted);">
+                                    <i class="bi bi-file-earmark-text me-1"></i>@(a.CRDocumentName ?? "—")
+                                </div>
+                            </td>
+                            <td style="font-size:0.82rem;color:var(--color-text-subtle);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                                title="@a.ProjectPath">
+                                @(string.IsNullOrWhiteSpace(a.ProjectPath) ? "—" : a.ProjectPath)
+                            </td>
+                            <td>
+                                @{
+                                    var statusClass = a.Status switch
+                                    {
+                                        AnalysisStatus.Completed => "status-completed",
+                                        AnalysisStatus.Failed => "status-failed",
+                                        AnalysisStatus.Running => "status-running",
+                                        _ => "status-pending"
+                                    };
+                                }
+                                <span class="status-badge @statusClass">@a.Status</span>
+                            </td>
+                            <td>
+                                <strong style="color:var(--color-primary);">@a.AffectedFiles.Count</strong>
+                            </td>
+                            <td style="font-size:0.82rem;color:var(--color-text-muted);white-space:nowrap;">
+                                @a.CreatedAt.ToString("MMM dd, yyyy")
+                                <div style="font-size:0.78rem;color:var(--color-text-subtle);">@a.CreatedAt.ToString("HH:mm")</div>
+                            </td>
+                            <td style="font-size:0.82rem;color:var(--color-text-subtle);">@duration</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a asp-controller="Analysis" asp-action="Result" asp-route-id="@a.Id"
+                                       class="btn-outline-custom" style="font-size:0.78rem;padding:0.28rem 0.7rem;"
+                                       title="View Result">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <form asp-action="Delete" asp-route-id="@a.Id" method="post"
+                                          onsubmit="return confirm('Delete this analysis?');" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-outline-custom"
+                                                style="font-size:0.78rem;padding:0.28rem 0.7rem;color:var(--color-danger);border-color:rgba(239,68,68,0.3);"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

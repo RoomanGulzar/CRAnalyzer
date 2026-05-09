@@ -1,0 +1,128 @@
+@using CRAnalyzer.Core.Domain.DTOs
+@model AnalysisRequestDto
+@{
+    ViewData["Title"] = "New Analysis";
+}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Parsing document...</div>
+    <div class="loading-sub" id="loadingSub">This may take 30–60 seconds</div>
+</div>
+
+<div class="row justify-content-center mt-2">
+    <div class="col-lg-9">
+
+        <!-- Page Header -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a asp-controller="Home" asp-action="Index" class="btn-outline-custom" style="padding:0.45rem 0.9rem;">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div>
+                <h1 style="font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin:0;">
+                    <i class="bi bi-plus-circle-fill me-2" style="color:var(--color-primary);"></i>New Analysis
+                </h1>
+                <p style="color:var(--color-text-muted);font-size:0.9rem;margin:0;">Upload a CR document and project to begin AI analysis</p>
+            </div>
+        </div>
+
+        <form asp-action="Submit" method="post" enctype="multipart/form-data" id="analysisForm">
+            @Html.AntiForgeryToken()
+
+            <div class="form-card">
+
+                <!-- Validation Summary -->
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div asp-validation-summary="All"></div>
+                    </div>
+                }
+
+                <!-- Title -->
+                <div class="mb-4">
+                    <label for="Title" class="form-label-custom">Analysis Title *</label>
+                    <input id="Title" name="Title" type="text" class="form-control-custom"
+                           placeholder="e.g. Add JWT Authentication to User Service"
+                           value="@Model?.Title" required />
+                    <span asp-validation-for="Title" class="text-danger" style="font-size:0.82rem;"></span>
+                </div>
+
+                <hr class="divider" />
+
+                <!-- CR Document Upload -->
+                <div class="mb-4">
+                    <label class="form-label-custom">
+                        <i class="bi bi-file-earmark-text me-1" style="color:var(--color-primary);"></i>
+                        Change Request Document *
+                    </label>
+                    <div class="file-upload-zone">
+                        <input type="file" id="CRDocument" name="CRDocument"
+                               accept=".txt,.md,.markdown,.pdf,.docx" required />
+                        <i class="bi bi-cloud-arrow-up-fill upload-icon"></i>
+                        <div class="upload-text">Drop your CR document here</div>
+                        <div class="upload-hint">Supported: TXT, MD, PDF, DOCX &bull; Max 10 MB</div>
+                        <div class="upload-filename"></div>
+                    </div>
+                    <span asp-validation-for="CRDocument" class="text-danger" style="font-size:0.82rem;"></span>
+                </div>
+
+                <hr class="divider" />
+
+                <!-- Project Source -->
+                <div class="mb-4">
+                    <label class="form-label-custom">
+                        <i class="bi bi-folder2-open me-1" style="color:var(--color-accent);"></i>
+                        Project / Repository
+                        <span style="font-weight:400;color:var(--color-text-subtle;">(optional)</span>
+                    </label>
+
+                    <!-- Tabs -->
+                    <div class="tab-nav" data-tabs>
+                        <button type="button" class="tab-btn active" data-tab="tab-folder">
+                            <i class="bi bi-folder2"></i> Folder Path
+                        </button>
+                        <button type="button" class="tab-btn" data-tab="tab-zip">
+                            <i class="bi bi-file-zip"></i> Upload ZIP
+                        </button>
+                    </div>
+
+                    <div id="tab-folder" class="tab-pane active">
+                        <input id="ProjectFolderPath" name="ProjectFolderPath" type="text"
+                               class="form-control-custom"
+                               placeholder="e.g. C:\Projects\MyApp  or  D:\MySelf\SomeProject" />
+                        <p style="font-size:0.8rem;color:var(--color-text-subtle);margin-top:0.5rem;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter the full server-side folder path to your project.
+                        </p>
+                    </div>
+
+                    <div id="tab-zip" class="tab-pane">
+                        <div class="file-upload-zone">
+                            <input type="file" id="ProjectZip" name="ProjectZip" accept=".zip" />
+                            <i class="bi bi-file-zip-fill upload-icon" style="color:var(--color-accent);"></i>
+                            <div class="upload-text">Drop your project ZIP here</div>
+                            <div class="upload-hint">Max 50 MB &bull; ZIP archive of project root</div>
+                            <div class="upload-filename"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="divider" />
+
+                <!-- Submit -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <p style="font-size:0.82rem;color:var(--color-text-subtle);">
+                        <i class="bi bi-clock me-1"></i>Analysis typically takes 30–90 seconds
+                    </p>
+                    <button type="submit" class="btn-primary-custom" id="submitBtn">
+                        <i class="bi bi-cpu-fill"></i> Run AI Analysis
+                    </button>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,198 @@
+@using CRAnalyzer.Core.Domain.Enums
+@using CRAnalyzer.Core.Domain.Models
+@model Analysis
+@{
+    ViewData["Title"] = "Analysis Result — " + Model.Title;
+}
+
+<!-- Page Header -->
+<div class="d-flex align-items-start gap-3 mb-4 mt-2">
+    <a asp-controller="Analysis" asp-action="History" class="btn-outline-custom" style="padding:0.45rem 0.9rem;margin-top:4px;">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h1 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.5px;margin:0;">@Model.Title</h1>
+            <span class="status-badge status-@Model.Status.ToString().ToLower()">@Model.Status</span>
+        </div>
+        <div style="color:var(--color-text-muted);font-size:0.85rem;margin-top:4px;">
+            <i class="bi bi-file-earmark-text me-1"></i>@Model.CRDocumentName
+            &bull; <i class="bi bi-folder2 me-1"></i>@(string.IsNullOrWhiteSpace(Model.ProjectPath) ? "No project" : Model.ProjectPath)
+            &bull; <i class="bi bi-clock me-1"></i>@Model.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+        </div>
+    </div>
+    <div>
+        <a asp-controller="Analysis" asp-action="New" class="btn-primary-custom" style="font-size:0.88rem;">
+            <i class="bi bi-plus-circle"></i> New
+        </a>
+    </div>
+</div>
+
+@if (Model.Status == AnalysisStatus.Failed)
+{
+    <div class="alert alert-danger mb-4">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Analysis failed:</strong> @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.Status == AnalysisStatus.Completed)
+{
+    <!-- Summary Card -->
+    <div class="card-glass mb-4">
+        <div class="section-title mb-2"><i class="bi bi-lightbulb-fill"></i> AI Summary</div>
+        <p style="color:var(--color-text-muted);line-height:1.7;margin:0;">@Model.Summary</p>
+
+        <div class="row g-3 mt-2">
+            <div class="col-sm-4">
+                <div style="background:var(--color-bg-2);border-radius:var(--radius-md);padding:1rem;border:1px solid var(--color-border);text-align:center;">
+                    <div style="font-size:2rem;font-weight:800;color:var(--color-primary);">@Model.AffectedFiles.Count</div>
+                    <div style="font-size:0.8rem;color:var(--color-text-muted);">Files Affected</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div style="background:var(--color-bg-2);border-radius:var(--radius-md);padding:1rem;border:1px solid var(--color-border);text-align:center;">
+                    <div style="font-size:2rem;font-weight:800;color:var(--color-success);">@Model.AffectedFiles.Count(f => f.ChangeType == ChangeType.Create)</div>
+                    <div style="font-size:0.8rem;color:var(--color-text-muted);">To Create</div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div style="background:var(--color-bg-2);border-radius:var(--radius-md);padding:1rem;border:1px solid var(--color-border);text-align:center;">
+                    <div style="font-size:2rem;font-weight:800;color:var(--color-warning);">@Model.AffectedFiles.Count(f => f.ChangeType == ChangeType.Modify || f.ChangeType == ChangeType.Refactor)</div>
+                    <div style="font-size:0.8rem;color:var(--color-text-muted);">To Modify/Refactor</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-nav" data-tabs>
+        <button type="button" class="tab-btn active" data-tab="tab-files">
+            <i class="bi bi-file-earmark-code"></i> Affected Files
+            <span style="background:var(--color-primary-glow);color:var(--color-primary);border-radius:99px;padding:0.1rem 0.5rem;font-size:0.75rem;font-weight:700;">@Model.AffectedFiles.Count</span>
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-prompt">
+            <i class="bi bi-terminal"></i> Generated Prompt
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-raw">
+            <i class="bi bi-braces"></i> Raw AI Response
+        </button>
+    </div>
+
+    <!-- Tab: Affected Files -->
+    <div id="tab-files" class="tab-pane active">
+        @if (!Model.AffectedFiles.Any())
+        {
+            <div class="empty-state">
+                <i class="bi bi-files"></i>
+                <h5>No affected files identified</h5>
+                <p>The AI did not flag any specific files for this change request.</p>
+            </div>
+        }
+        else
+        {
+            <div class="card-glass" style="padding:0;overflow:hidden;">
+                <div style="overflow-x:auto;">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>File Path</th>
+                                <th>Change Type</th>
+                                <th>Reason</th>
+                                <th>Suggested Steps</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{int idx = 1;}
+                            @foreach (var file in Model.AffectedFiles)
+                            {
+                                var badgeClass = file.ChangeType switch
+                                {
+                                    ChangeType.Create => "badge-create",
+                                    ChangeType.Delete => "badge-delete",
+                                    ChangeType.Refactor => "badge-refactor",
+                                    _ => "badge-modify"
+                                };
+                                var badgeIcon = file.ChangeType switch
+                                {
+                                    ChangeType.Create => "bi-plus-circle",
+                                    ChangeType.Delete => "bi-trash",
+                                    ChangeType.Refactor => "bi-arrow-repeat",
+                                    _ => "bi-pencil"
+                                };
+                                <tr>
+                                    <td style="color:var(--color-text-subtle);font-size:0.82rem;">@(idx++)</td>
+                                    <td>
+                                        <code style="background:var(--color-bg-2);padding:0.2rem 0.5rem;border-radius:6px;font-size:0.82rem;color:var(--color-accent);">
+                                            @file.FilePath
+                                        </code>
+                                    </td>
+                                    <td>
+                                        <span class="badge-change @badgeClass">
+                                            <i class="bi @badgeIcon"></i> @file.ChangeType
+                                        </span>
+                                    </td>
+                                    <td style="max-width:280px;font-size:0.85rem;color:var(--color-text-muted);">@file.Reason</td>
+                                    <td style="max-width:320px;">
+                                        @if (!string.IsNullOrWhiteSpace(file.SuggestedSteps))
+                                        {
+                                            var steps = file.SuggestedSteps.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                            <ul class="steps-list">
+                                                @foreach (var step in steps)
+                                                {
+                                                    <li>@step</li>
+                                                }
+                                            </ul>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Tab: Generated Prompt -->
+    <div id="tab-prompt" class="tab-pane">
+        <div class="card-glass">
+            <div class="section-header mb-3">
+                <div class="section-title"><i class="bi bi-terminal-fill"></i> Implementation Prompt</div>
+                <button type="button" class="btn-outline-custom" data-copy="generatedPrompt" style="font-size:0.82rem;padding:0.4rem 0.9rem;">
+                    <i class="bi bi-clipboard me-1"></i>Copy
+                </button>
+            </div>
+            <p style="font-size:0.82rem;color:var(--color-text-subtle);margin-bottom:1rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Copy this prompt and paste it into any AI coding agent (ChatGPT, Claude, Copilot, etc.) to implement the changes.
+            </p>
+            <div class="prompt-area" id="generatedPrompt">@Model.GeneratedPrompt</div>
+        </div>
+    </div>
+
+    <!-- Tab: Raw Response -->
+    <div id="tab-raw" class="tab-pane">
+        <div class="card-glass">
+            <div class="section-header mb-3">
+                <div class="section-title"><i class="bi bi-braces"></i> Raw AI JSON Response</div>
+                <button type="button" class="btn-outline-custom" data-copy="rawResponse" style="font-size:0.82rem;padding:0.4rem 0.9rem;">
+                    <i class="bi bi-clipboard me-1"></i>Copy
+                </button>
+            </div>
+            <div class="prompt-area" id="rawResponse">@Model.RawAIResponse</div>
+        </div>
+    </div>
+}
+
+<!-- Delete form -->
+<div class="mt-4 d-flex justify-content-end">
+    <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+          onsubmit="return confirm('Delete this analysis? This cannot be undone.');">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn-outline-custom" style="color:var(--color-danger);border-color:var(--color-danger);">
+            <i class="bi bi-trash-fill"></i> Delete Analysis
+        </button>
+    </form>
+</div>

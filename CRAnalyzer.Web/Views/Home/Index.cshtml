@@ -1,0 +1,163 @@
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Initializing...</div>
+    <div class="loading-sub" id="loadingSub">Please wait</div>
+</div>
+
+<!-- Hero -->
+<section class="hero-section mt-2">
+    <div class="hero-badge"><i class="bi bi-stars"></i> AI-Powered Analysis</div>
+    <h1 class="hero-title">
+        Change Request <span class="gradient-text">Analyzer</span>
+    </h1>
+    <p class="hero-subtitle">
+        Upload a Change Request document, point to your project, and let GPT-4o identify every file, class, and method that needs updating.
+    </p>
+    <div class="d-flex gap-3 flex-wrap">
+        <a asp-controller="Analysis" asp-action="New" class="btn-primary-custom">
+            <i class="bi bi-plus-circle-fill"></i> New Analysis
+        </a>
+        <a asp-controller="Analysis" asp-action="History" class="btn-outline-custom">
+            <i class="bi bi-clock-history"></i> View History
+        </a>
+    </div>
+</section>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="bi bi-cpu"></i></div>
+            <div>
+                <div class="stat-value" data-countup>@ViewBag.Total</div>
+                <div class="stat-label">Total Analyses</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div class="stat-value" data-countup>@ViewBag.Completed</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+                <div class="stat-value" data-countup>@ViewBag.Pending</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon red"><i class="bi bi-exclamation-octagon-fill"></i></div>
+            <div>
+                <div class="stat-value" data-countup>@ViewBag.Failed</div>
+                <div class="stat-label">Failed</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+<div class="card-glass">
+    <div class="section-header">
+        <h2 class="section-title"><i class="bi bi-clock-history"></i> Recent Analyses</h2>
+        <a asp-controller="Analysis" asp-action="History" class="btn-outline-custom" style="font-size:0.82rem; padding:0.4rem 0.9rem;">
+            View All <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+
+    @{
+        var recent = ViewBag.RecentAnalyses as IEnumerable<CRAnalyzer.Core.Domain.Models.Analysis>;
+    }
+
+    @if (recent == null || !recent.Any())
+    {
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No analyses yet</h5>
+            <p>Create your first analysis to get started.</p>
+            <a asp-controller="Analysis" asp-action="New" class="btn-primary-custom mt-2">
+                <i class="bi bi-plus-circle-fill"></i> Start Now
+            </a>
+        </div>
+    }
+    else
+    {
+        <div style="overflow-x:auto;">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Files Affected</th>
+                        <th>Created</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in recent)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@a.Title</strong>
+                                <div style="font-size:0.8rem; color:var(--color-text-subtle);">@a.CRDocumentName</div>
+                            </td>
+                            <td>
+                                <span class="status-badge status-@a.Status.ToString().ToLower()">
+                                    @a.Status
+                                </span>
+                            </td>
+                            <td><strong>@a.AffectedFiles.Count</strong> files</td>
+                            <td style="color:var(--color-text-muted);font-size:0.85rem;">@a.CreatedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                            <td>
+                                <a asp-controller="Analysis" asp-action="Result" asp-route-id="@a.Id" class="btn-outline-custom" style="font-size:0.8rem;padding:0.3rem 0.75rem;">
+                                    View <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- How it works -->
+<div class="card-glass mt-3">
+    <h2 class="section-title mb-3"><i class="bi bi-diagram-3-fill"></i> How It Works</h2>
+    <div class="row g-3">
+        @{
+            var steps = new[]
+            {
+                ("1", "bi-upload", "Upload CR Document", "Upload your Change Request as TXT, PDF, DOCX, or Markdown"),
+                ("2", "bi-folder2-open", "Provide Project", "Give a server path or upload a ZIP of your codebase"),
+                ("3", "bi-cpu-fill", "AI Analysis", "GPT-4o analyzes the CR against your project structure"),
+                ("4", "bi-lightning-fill", "Get Results", "Receive affected files, change types, and an optimized AI coding prompt"),
+            };
+        }
+        @foreach (var (num, icon, title, desc) in steps)
+        {
+            <div class="col-sm-6 col-lg-3">
+                <div style="padding:1rem; border-radius:var(--radius-md); background:var(--color-bg-2); border:1px solid var(--color-border); height:100%;">
+                    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.65rem;">
+                        <div style="width:32px;height:32px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:0.85rem;flex-shrink:0;">@num</div>
+                        <i class="bi @icon" style="font-size:1.1rem;color:var(--color-primary);"></i>
+                    </div>
+                    <div style="font-weight:600;margin-bottom:0.25rem;">@title</div>
+                    <div style="font-size:0.82rem;color:var(--color-text-muted);">@desc</div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

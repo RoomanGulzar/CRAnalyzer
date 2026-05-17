@@ -88,9 +88,14 @@ public class AIService : IAIService
         };
 
         // 3. Execution via client.Models.GenerateContentAsync
+        var userContent = new Content
+        {
+            Parts = new List<Part> { new Part { Text = userPrompt } }
+        };
+
         var response = await client.Models.GenerateContentAsync(
             model: model,
-            contents: userPrompt,
+            contents: userContent,
             config: config
         );
 

@@ -118,7 +118,7 @@ public class AnalysisController : Controller
 
             // Call AI
             _logger.LogInformation("Calling AI for analysis {Id}", analysis.Id);
-            var result = await _aiService.AnalyzeAsync(crContent, projectSnapshot);
+            var result = await _aiService.GAnalyzeAsync(crContent, projectSnapshot);
 
             // Persist results
             analysis.Status = AnalysisStatus.Completed;

@@ -1,12 +1,13 @@
 using CRAnalyzer.Core.Domain.DTOs;
 using CRAnalyzer.Core.Domain.Enums;
 using CRAnalyzer.Core.Interfaces;
+using Google.GenAI;
+using Google.GenAI.Types;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenAI.Chat;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
 namespace CRAnalyzer.Infrastructure.Services;
 
 public class AIService : IAIService
@@ -57,6 +58,60 @@ public class AIService : IAIService
 
         return result;
     }
+
+
+
+
+    public async Task<AnalysisResultDto> GAnalyzeAsync(string crContent, string projectSnapshot, CancellationToken cancellationToken = default)
+    {
+        var apiKey = _configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API key not configured.");
+        var model = _configuration["Gemini:Model"] ?? "gemini-2.5-flash";
+        var maxTokens = int.TryParse(_configuration["Gemini:MaxTokens"], out var mt) ? mt : 4096;
+
+        var systemPrompt = BuildSystemPrompt();
+        var userPrompt = BuildUserPrompt(crContent, projectSnapshot);
+
+        _logger.LogInformation("Calling Gemini model {Model} for analysis", model);
+
+        // 1. Correct class instantiation
+        var client = new Client(apiKey: apiKey);
+
+        // 2. Correct configuration structure using GenerateContentConfig
+        var config = new GenerateContentConfig
+        {
+            MaxOutputTokens = maxTokens,
+            ResponseMimeType = "application/json", // Ensures valid JSON returned
+            SystemInstruction = new Content
+            {
+                Parts = new List<Part> { new Part { Text = systemPrompt } }
+            }
+        };
+
+        // 3. Execution via client.Models.GenerateContentAsync
+        var response = await client.Models.GenerateContentAsync(
+            model: model,
+            contents: userPrompt,
+            config: config
+        );
+
+        // 4. Extracting content safely from Candidates
+        var rawContent = response.Candidates?[0]?.Content?.Parts?[0]?.Text;
+
+        if (string.IsNullOrEmpty(rawContent))
+        {
+            throw new InvalidOperationException("Gemini API returned an empty response.");
+        }
+
+        _logger.LogDebug("Raw AI response: {Response}", rawContent);
+
+        var result = ParseAIResponse(rawContent, crContent, projectSnapshot);
+        result.RawResponse = rawContent;
+
+        return result;
+    }
+
+
+
 
     private static string BuildSystemPrompt() => """
         You are an expert software architect and code analysis AI. Your job is to analyze a Change Request (CR) document against a given project structure and identify all files/components that need to be changed.
